@@ -112,12 +112,23 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         if: ${{ env.commit }}
 
-      - name: Build With Gradle
-        if: ${{ env.commit }}
-        working-directory: TVBoxOSC
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleRelease --build-cache --parallel --daemon --warning-mode all --no-daemon
+      - name: Setup Build Environment
+  if: ${{ env.commit }}
+  working-directory: TVBoxOSC
+  run: |
+    cat > local.properties << EOF
+sdk.dir=/usr/lib/android-sdk
+chaquopy.buildPython=/usr/bin/python3
+EOF
+    which python3
+    python3 --version
+
+- name: Build With Gradle
+  if: ${{ env.commit }}
+  working-directory: TVBoxOSC
+  run: |
+    chmod +x gradlew
+    ./gradlew assembleRelease --build-cache --parallel --daemon --warning-mode all --no-daemon
 
       - name: Prepare App
         if: ${{ env.commit }}
