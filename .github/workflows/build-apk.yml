@@ -1,0 +1,35 @@
+name: Build TVBoxOS APK
+
+on:
+  workflow_dispatch: # 允许你在 Actions 界面手动点击按钮编译
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. 原地拉取自己仓库的 TVBoxOS 源码
+        uses: actions/checkout@v4 # 去掉所有外部 repository 参数，只拉你自己的，100% 成功
+
+      - name: 2. 配置 Java 11 运行环境
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '11' # 该老牌仓库用 Java 11 兼容性最好，能完美避开很多新版语法报错
+          cache: 'gradle'
+
+      - name: 3. 赋予 gradlew 脚本执行权限
+        run: chmod +x gradlew
+
+      - name: 4. 彻底干掉 release 签名限制（强行切到 Debug 编译模式）
+        run: |
+          sed -i 's/signingConfig signingConfigs.release/signingConfig signingConfigs.debug/g' app/build.gradle || true
+          ./gradlew clean
+
+      - name: 5. 开始让云端编译 APK 
+        run: ./gradlew assembleDebug -x test -x lint --stacktrace
+
+      - name: 6. 将打包好的成品 APK 发布到网页供下载
+        uses: actions/upload-artifact@v4
+        with:
+          name: TVBoxOS-Custom-APK
+          path: app/build/outputs/apk/**/*.apk
